@@ -46,7 +46,11 @@ import {
   replaceTextRange,
 } from "../../composer-logic";
 import { DISCONNECTED_COMPOSER_PLACEHOLDER } from "../../composerPlaceholder";
-import { deriveComposerSendState, readFileAsDataUrl } from "../ChatView.logic";
+import {
+  deriveComposerSendState,
+  readFileAsDataUrl,
+  shouldScrollTranscriptFromComposerArrow,
+} from "../ChatView.logic";
 import {
   dataTransferHasComposerMention,
   makeComposerMentionDragHandlers,
@@ -737,6 +741,7 @@ export interface ChatComposerProps {
   onExpandImage: (preview: ExpandedImagePreview) => void;
   onFileOpen: (attachment: ChatFileAttachment) => void;
   openingVideoAttachmentId: string | null;
+  onTranscriptKeyboardScroll?: (direction: "up" | "down", unit: "page" | "line") => boolean;
 }
 
 // --------------------------------------------------------------------------
@@ -816,6 +821,7 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
     onExpandImage,
     onFileOpen,
     openingVideoAttachmentId,
+    onTranscriptKeyboardScroll,
   } = props;
   const activeTasksProgress = props.threadSyncPhase === null ? props.activeTasksProgress : null;
   const activeTaskSteps = props.threadSyncPhase === null ? props.activeTaskSteps : null;
@@ -2381,6 +2387,27 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
     if (submissionIntent) {
       submitComposer(undefined, submissionIntent);
       return true;
+    }
+    if (
+      (key === "ArrowUp" || key === "ArrowDown") &&
+      !event.altKey &&
+      !event.metaKey &&
+      !event.ctrlKey &&
+      !event.shiftKey &&
+      onTranscriptKeyboardScroll
+    ) {
+      const snapshot = composerEditorRef.current?.readSnapshot();
+      if (
+        snapshot &&
+        shouldScrollTranscriptFromComposerArrow({
+          key,
+          cursor: snapshot.cursor,
+          valueLength: snapshot.value.length,
+          blocked: isStashMenuOpen,
+        })
+      ) {
+        return onTranscriptKeyboardScroll(key === "ArrowUp" ? "up" : "down", "line");
+      }
     }
     return false;
   };
@@ -4157,6 +4184,16 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
                   onRemoveTerminalContext={removeComposerTerminalContextFromDraft}
                   onChange={onPromptChange}
                   onCommandKeyDown={onComposerCommandKey}
+                  {...(onTranscriptKeyboardScroll
+                    ? {
+                        onTranscriptPageScroll: (direction: "up" | "down") => {
+                          if (composerMenuOpenRef.current || isStashMenuOpen) {
+                            return false;
+                          }
+                          return onTranscriptKeyboardScroll(direction, "page");
+                        },
+                      }
+                    : {})}
                   onPaste={onComposerPaste}
                   placeholder={
                     isComposerApprovalState
