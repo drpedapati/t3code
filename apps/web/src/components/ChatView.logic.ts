@@ -645,3 +645,43 @@ export function hasServerAcknowledgedLocalDispatch(input: {
     input.localDispatch.sessionUpdatedAt !== (session?.updatedAt ?? null)
   );
 }
+
+export const TRANSCRIPT_KEYBOARD_LINE_PX = 48;
+
+export function transcriptKeyboardScrollDelta(input: {
+  direction: "up" | "down";
+  unit: "page" | "line";
+  viewportPx: number;
+}): number {
+  const magnitude =
+    input.unit === "page" ? Math.max(1, input.viewportPx) * 0.9 : TRANSCRIPT_KEYBOARD_LINE_PX;
+  return magnitude * (input.direction === "up" ? -1 : 1);
+}
+
+export function composerOverflowConsumesPageKey(input: {
+  direction: "up" | "down";
+  scrollTop: number;
+  scrollHeight: number;
+  clientHeight: number;
+}): boolean {
+  const maxScroll = input.scrollHeight - input.clientHeight;
+  if (maxScroll <= 1) {
+    return false;
+  }
+  return input.direction === "up" ? input.scrollTop > 1 : input.scrollTop < maxScroll - 1;
+}
+
+export function shouldScrollTranscriptFromComposerArrow(input: {
+  key: "ArrowUp" | "ArrowDown";
+  cursor: number;
+  valueLength: number;
+  blocked: boolean;
+}): boolean {
+  if (input.blocked) {
+    return false;
+  }
+  if (input.key === "ArrowUp") {
+    return input.cursor <= 0;
+  }
+  return input.cursor >= input.valueLength;
+}

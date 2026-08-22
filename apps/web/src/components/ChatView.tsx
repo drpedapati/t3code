@@ -339,6 +339,7 @@ import {
   revokeUserMessagePreviewUrls,
   shouldWriteThreadErrorToCurrentServerThread,
   startNewThreadForProject,
+  transcriptKeyboardScrollDelta,
   waitForStartedServerThread,
 } from "./ChatView.logic";
 import type { ThreadSyncPhase } from "../threadSync";
@@ -3869,6 +3870,39 @@ function ChatViewContent(props: ChatViewProps) {
       void legendListRef.current?.scrollToEnd?.({ animated });
     });
   }, []);
+  const scrollTranscriptBy = useCallback(
+    (direction: "up" | "down", unit: "page" | "line") => {
+      const list = legendListRef.current;
+      if (!list) {
+        return false;
+      }
+      const state = list.getState();
+      const viewport = Math.max(
+        1,
+        (state.scrollLength ?? 0) - composerOverlayHeight - CHAT_LIST_ANCHOR_OFFSET,
+      );
+      const delta = transcriptKeyboardScrollDelta({
+        direction,
+        unit,
+        viewportPx: viewport,
+      });
+      const current = state.scroll ?? 0;
+      const next = Math.max(0, current + delta);
+      if (Math.abs(next - current) < 0.5) {
+        return false;
+      }
+      if (delta < 0 && timelineRealContentOverflowsViewport()) {
+        cancelTimelineLiveFollowForUserNavigation();
+      }
+      void list.scrollToOffset({ offset: next, animated: false });
+      return true;
+    },
+    [
+      cancelTimelineLiveFollowForUserNavigation,
+      composerOverlayHeight,
+      timelineRealContentOverflowsViewport,
+    ],
+  );
   useEffect(() => {
     let removeListeners: (() => void) | null = null;
     let frame: number | null = null;
@@ -6691,6 +6725,7 @@ function ChatViewContent(props: ChatViewProps) {
                             scheduleComposerFocus={scheduleComposerFocus}
                             setThreadError={setThreadError}
                             onExpandImage={onExpandTimelineImage}
+                            onTranscriptKeyboardScroll={scrollTranscriptBy}
                           />
                         </div>
                       </div>

@@ -45,7 +45,11 @@ import {
   replaceTextRange,
 } from "../../composer-logic";
 import { DISCONNECTED_COMPOSER_PLACEHOLDER } from "../../composerPlaceholder";
-import { deriveComposerSendState, readFileAsDataUrl } from "../ChatView.logic";
+import {
+  deriveComposerSendState,
+  readFileAsDataUrl,
+  shouldScrollTranscriptFromComposerArrow,
+} from "../ChatView.logic";
 import {
   dataTransferHasComposerMention,
   makeComposerMentionDragHandlers,
@@ -633,6 +637,7 @@ export interface ChatComposerProps {
   scheduleComposerFocus: () => void;
   setThreadError: (threadId: ThreadId | null, error: string | null) => void;
   onExpandImage: (preview: ExpandedImagePreview) => void;
+  onTranscriptKeyboardScroll?: (direction: "up" | "down", unit: "page" | "line") => boolean;
 }
 
 // --------------------------------------------------------------------------
@@ -706,6 +711,7 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
     scheduleComposerFocus,
     setThreadError,
     onExpandImage,
+    onTranscriptKeyboardScroll,
   } = props;
   const isSendDisabled = sendDisabledReason !== null;
 
@@ -2000,6 +2006,27 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
       submitComposer(undefined, submissionIntent);
       return true;
     }
+    if (
+      (key === "ArrowUp" || key === "ArrowDown") &&
+      !event.altKey &&
+      !event.metaKey &&
+      !event.ctrlKey &&
+      !event.shiftKey &&
+      onTranscriptKeyboardScroll
+    ) {
+      const snapshot = composerEditorRef.current?.readSnapshot();
+      if (
+        snapshot &&
+        shouldScrollTranscriptFromComposerArrow({
+          key,
+          cursor: snapshot.cursor,
+          valueLength: snapshot.value.length,
+          blocked: isStashMenuOpen,
+        })
+      ) {
+        return onTranscriptKeyboardScroll(key === "ArrowUp" ? "up" : "down", "line");
+      }
+    }
     return false;
   };
 
@@ -3232,6 +3259,16 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
                   onRemoveTerminalContext={removeComposerTerminalContextFromDraft}
                   onChange={onPromptChange}
                   onCommandKeyDown={onComposerCommandKey}
+                  {...(onTranscriptKeyboardScroll
+                    ? {
+                        onTranscriptPageScroll: (direction: "up" | "down") => {
+                          if (composerMenuOpenRef.current || isStashMenuOpen) {
+                            return false;
+                          }
+                          return onTranscriptKeyboardScroll(direction, "page");
+                        },
+                      }
+                    : {})}
                   onPaste={onComposerPaste}
                   placeholder={
                     isComposerApprovalState
