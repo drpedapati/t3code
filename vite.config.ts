@@ -22,7 +22,9 @@ export default defineConfig({
   },
   staged: {
     // Formatter only for now — no lint or typecheck on commit.
-    "*": "vp fmt",
+    // Narrower than "*" so Makefile / shell helpers do not fail `vp fmt`
+    // with "Expected at least one target file".
+    "*.{ts,tsx,js,jsx,mjs,cjs,json,md,yml,yaml,css,html}": "vp fmt",
   },
   fmt: {
     ignorePatterns: [
@@ -33,6 +35,8 @@ export default defineConfig({
       "dist-electron",
       "node_modules",
       "pnpm-lock.yaml",
+      "Makefile",
+      "scripts/install-local-macos.sh",
       "*.tsbuildinfo",
       "**/routeTree.gen.ts",
       "apps/mobile/android/**",

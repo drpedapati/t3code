@@ -12,31 +12,39 @@ ARCH="${T3_LOCAL_ARCH:-arm64}"
 PLATFORM="${T3_LOCAL_PLATFORM:-mac}"
 TARGET="${T3_LOCAL_TARGET:-dmg}"
 
+# Distinct from official Alpha: separate bundle id, Dock name, user data,
+# no t3code:// handler, no GitHub auto-update channel.
+export T3CODE_DESKTOP_PRODUCT_NAME="${T3CODE_DESKTOP_PRODUCT_NAME:-${APP_NAME}}"
+export T3CODE_DESKTOP_APP_ID="${T3CODE_DESKTOP_APP_ID:-com.drpedapati.t3code.local}"
+export T3CODE_DESKTOP_SKIP_PROTOCOLS="${T3CODE_DESKTOP_SKIP_PROTOCOLS:-1}"
+export T3CODE_DESKTOP_SKIP_PUBLISH="${T3CODE_DESKTOP_SKIP_PUBLISH:-1}"
+
 cd "$ROOT"
 
 if [[ ! -x "${HOME}/.vite-plus/bin/vp" ]]; then
   echo "vp is not installed. Install Vite+ first: curl -fsSL https://vite.plus | bash" >&2
   exit 1
 fi
+if ! command -v cargo >/dev/null; then
+  echo "cargo is required for the desktop resource monitor. Install with: brew install rust" >&2
+  exit 1
+fi
 
 echo "==> installing workspace deps"
 vp i
 
-echo "==> building unsigned ${PLATFORM}/${TARGET} (${ARCH})"
+echo "==> building unsigned ${PLATFORM}/${TARGET} (${ARCH}) as ${T3CODE_DESKTOP_PRODUCT_NAME}"
 node scripts/build-desktop-artifact.ts \
   --platform "$PLATFORM" \
   --target "$TARGET" \
-  --arch "$ARCH" \
-  --verbose
+  --arch "$ARCH"
 
 shopt -s nullglob
-dmgs=(release/T3-Code-*-"${ARCH}".dmg)
-if ((${#dmgs[@]} == 0)); then
+dmg="$(ls -t release/T3-Code-*-"${ARCH}".dmg 2>/dev/null | head -n 1 || true)"
+if [[ -z "$dmg" || ! -f "$dmg" ]]; then
   echo "No DMG found under ${ROOT}/release" >&2
   exit 1
 fi
-# Newest by mtime.
-dmg="$(ls -t "${dmgs[@]}" | head -n 1)"
 echo "==> using ${dmg}"
 
 mount_point="$(mktemp -d "${TMPDIR:-/tmp}/t3-local-dmg.XXXXXX")"
@@ -46,7 +54,7 @@ cleanup() {
 }
 trap cleanup EXIT
 
-hdiutil attach "$dmg" -nobrowse -readonly -mountpoint "$mount_point"
+hdiutil attach "$dmg" -nobrowse -readonly -noverify -mountpoint "$mount_point" >/dev/null
 
 src_app=""
 for candidate in "$mount_point"/*.app; do
@@ -59,14 +67,16 @@ if [[ -z "$src_app" || ! -d "$src_app" ]]; then
 fi
 
 echo "==> installing ${src_app} -> ${APP_DEST}"
-osascript -e "tell application \"${APP_NAME}\" to quit" >/dev/null 2>&1 || true
-# Give the previous instance a moment to exit before replacing the bundle.
-sleep 1
+if pgrep -f "${APP_DEST}/Contents/MacOS/" >/dev/null 2>&1; then
+  pkill -f "${APP_DEST}/Contents/MacOS/" >/dev/null 2>&1 || true
+  sleep 1
+fi
 rm -rf "$APP_DEST"
 mkdir -p "$(dirname "$APP_DEST")"
 ditto "$src_app" "$APP_DEST"
-# Unsigned local builds trip Gatekeeper on copy; clear quarantine.
 xattr -cr "$APP_DEST" 2>/dev/null || true
+# Ad-hoc sign so Gatekeeper treats this as a local build, not an unsigned download.
+codesign --force --deep --sign - "$APP_DEST" >/dev/null
 
 echo "==> installed ${APP_DEST}"
 echo "    official Alpha app is untouched: /Applications/T3 Code (Alpha).app"
