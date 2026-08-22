@@ -33,6 +33,8 @@ export default defineConfig({
       "dist-electron",
       "node_modules",
       "pnpm-lock.yaml",
+      "Makefile",
+      "scripts/install-local-macos.sh",
       "*.tsbuildinfo",
       "**/routeTree.gen.ts",
       "apps/mobile/android/**",

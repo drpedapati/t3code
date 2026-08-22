@@ -8,6 +8,7 @@ APP_NAME ?= T3 Code (Local)
 APP_DEST ?= /Applications/$(APP_NAME).app
 UPSTREAM ?= https://github.com/pingdotgg/t3code.git
 
+.DEFAULT_GOAL := help
 .PHONY: help sync deps build release open uninstall
 
 help:
@@ -21,13 +22,17 @@ help:
 sync:
 	@git remote get-url upstream >/dev/null 2>&1 || git remote add upstream $(UPSTREAM)
 	git fetch upstream main
-	git merge upstream/main
+	git merge --no-edit upstream/main
 
 deps:
 	$(VP) i
 
 build:
-	node scripts/build-desktop-artifact.ts --platform mac --target dmg --arch arm64 --verbose
+	T3CODE_DESKTOP_PRODUCT_NAME="$(APP_NAME)" \
+	T3CODE_DESKTOP_APP_ID="com.drpedapati.t3code.local" \
+	T3CODE_DESKTOP_SKIP_PROTOCOLS=1 \
+	T3CODE_DESKTOP_SKIP_PUBLISH=1 \
+	node scripts/build-desktop-artifact.ts --platform mac --target dmg --arch arm64
 
 release:
 	bash scripts/install-local-macos.sh
@@ -38,6 +43,6 @@ open:
 	open "$(APP_DEST)"
 
 uninstall:
-	@osascript -e 'tell application "$(APP_NAME)" to quit' >/dev/null 2>&1 || true
+	@pkill -f "$(APP_DEST)/Contents/MacOS/" >/dev/null 2>&1 || true
 	rm -rf "$(APP_DEST)"
 	@echo "Removed $(APP_DEST)"
