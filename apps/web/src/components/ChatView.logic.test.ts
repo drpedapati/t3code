@@ -37,6 +37,9 @@ import {
   shouldReleaseTimelineAnchorForToolActivity,
   shouldShowBranchMismatchBanner,
   shouldWriteThreadErrorToCurrentServerThread,
+  composerOverflowConsumesPageKey,
+  shouldScrollTranscriptFromComposerArrow,
+  transcriptKeyboardScrollDelta,
 } from "./ChatView.logic";
 
 const environmentId = EnvironmentId.make("environment-local");
@@ -902,5 +905,62 @@ describe("hasServerAcknowledgedLocalDispatch", () => {
     expect(hasServerAcknowledgedLocalDispatch({ ...common, hasPendingApproval: true })).toBe(true);
     expect(hasServerAcknowledgedLocalDispatch({ ...common, hasPendingUserInput: true })).toBe(true);
     expect(hasServerAcknowledgedLocalDispatch({ ...common, threadError: "failed" })).toBe(true);
+  });
+});
+
+describe("composer transcript keyboard scroll", () => {
+  it("pages by 90% of the viewport and lines by a fixed step", () => {
+    expect(transcriptKeyboardScrollDelta({ direction: "up", unit: "page", viewportPx: 1000 })).toBe(
+      -900,
+    );
+    expect(
+      transcriptKeyboardScrollDelta({ direction: "down", unit: "line", viewportPx: 1000 }),
+    ).toBe(48);
+  });
+
+  it("lets the composer consume PageUp only while it can still scroll", () => {
+    expect(
+      composerOverflowConsumesPageKey({
+        direction: "up",
+        scrollTop: 0,
+        scrollHeight: 400,
+        clientHeight: 80,
+      }),
+    ).toBe(false);
+    expect(
+      composerOverflowConsumesPageKey({
+        direction: "up",
+        scrollTop: 40,
+        scrollHeight: 400,
+        clientHeight: 80,
+      }),
+    ).toBe(true);
+  });
+
+  it("scrolls the transcript from an empty prompt or a caret at the edge", () => {
+    expect(
+      shouldScrollTranscriptFromComposerArrow({
+        key: "ArrowUp",
+        cursor: 0,
+        valueLength: 0,
+        blocked: false,
+      }),
+    ).toBe(true);
+    expect(
+      shouldScrollTranscriptFromComposerArrow({
+        key: "ArrowDown",
+        cursor: 2,
+        valueLength: 8,
+        blocked: false,
+      }),
+    ).toBe(false);
+    expect(
+      shouldScrollTranscriptFromComposerArrow({
+        key: "ArrowUp",
+        cursor: 0,
+        valueLength: 8,
+        blocked: true,
+      }),
+    ).toBe(false);
   });
 });

@@ -69,6 +69,7 @@ import {
   type TerminalContextDraft,
 } from "~/lib/terminalContext";
 import { cn, isMacPlatform } from "~/lib/utils";
+import { composerOverflowConsumesPageKey } from "./ChatView.logic";
 import { basenameOfPath } from "~/pierre-icons";
 import {
   COMPOSER_INLINE_CHIP_DECORATOR_CLASS_NAME,
@@ -897,6 +898,7 @@ interface ComposerPromptEditorProps {
     key: "ArrowDown" | "ArrowUp" | "Enter" | "Tab",
     event: KeyboardEvent,
   ) => boolean;
+  onTranscriptPageScroll?: (direction: "up" | "down") => boolean;
   onPaste: React.ClipboardEventHandler<HTMLElement>;
   editorRef: React.RefObject<ComposerPromptEditorHandle | null>;
 }
@@ -1025,6 +1027,55 @@ function ComposerInlineTokenArrowPlugin() {
       unregisterRight();
     };
   }, [editor]);
+
+  return null;
+}
+
+function ComposerPageScrollPlugin({
+  onPageScroll,
+}: {
+  onPageScroll?: (direction: "up" | "down") => boolean;
+}) {
+  const [editor] = useLexicalComposerContext();
+
+  useEffect(() => {
+    if (!onPageScroll) {
+      return;
+    }
+    return editor.registerCommand(
+      KEY_DOWN_COMMAND,
+      (event) => {
+        if (event.key !== "PageUp" && event.key !== "PageDown") {
+          return false;
+        }
+        if (event.altKey || event.metaKey || event.ctrlKey || event.shiftKey || event.isComposing) {
+          return false;
+        }
+        const root = editor.getRootElement();
+        if (!root) {
+          return false;
+        }
+        const direction = event.key === "PageUp" ? "up" : "down";
+        if (
+          composerOverflowConsumesPageKey({
+            direction,
+            scrollTop: root.scrollTop,
+            scrollHeight: root.scrollHeight,
+            clientHeight: root.clientHeight,
+          })
+        ) {
+          return false;
+        }
+        if (!onPageScroll(direction)) {
+          return false;
+        }
+        event.preventDefault();
+        event.stopPropagation();
+        return true;
+      },
+      COMMAND_PRIORITY_HIGH,
+    );
+  }, [editor, onPageScroll]);
 
   return null;
 }
@@ -1537,6 +1588,7 @@ function ComposerPromptEditorInner({
   onRemoveTerminalContext,
   onChange,
   onCommandKeyDown,
+  onTranscriptPageScroll,
   onPaste,
   editorRef,
 }: ComposerPromptEditorProps) {
@@ -1775,6 +1827,9 @@ function ComposerPromptEditorInner({
         <OnChangePlugin onChange={handleEditorChange} />
         <ComposerCommandKeyPlugin {...(onCommandKeyDown ? { onCommandKeyDown } : {})} />
         <ComposerSurroundSelectionPlugin terminalContexts={terminalContexts} skills={skills} />
+        <ComposerPageScrollPlugin
+          {...(onTranscriptPageScroll ? { onPageScroll: onTranscriptPageScroll } : {})}
+        />
         <ComposerHomeEndKeyPlugin />
         <ComposerInlineTokenArrowPlugin />
         <ComposerInlineTokenSelectionNormalizePlugin />
@@ -1798,6 +1853,7 @@ export function ComposerPromptEditor({
   onRemoveTerminalContext,
   onChange,
   onCommandKeyDown,
+  onTranscriptPageScroll,
   onPaste,
   editorRef,
 }: ComposerPromptEditorProps) {
@@ -1837,6 +1893,7 @@ export function ComposerPromptEditor({
         onPaste={onPaste}
         editorRef={editorRef}
         {...(onCommandKeyDown ? { onCommandKeyDown } : {})}
+        {...(onTranscriptPageScroll ? { onTranscriptPageScroll } : {})}
         {...(className ? { className } : {})}
       />
     </LexicalComposer>
