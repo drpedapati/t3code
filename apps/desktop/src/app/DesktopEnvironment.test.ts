@@ -130,6 +130,20 @@ describe("DesktopEnvironment", () => {
     }),
   );
 
+  it.effect("keeps packaged fork Dev off Nightly userdata and bundle identity", () =>
+    Effect.gen(function* () {
+      const packaged = yield* makeEnvironment({ isPackaged: true });
+
+      assert.equal(packaged.isDevelopment, false);
+      assert.equal(packaged.usesDevDesktopIdentity, true);
+      assert.equal(packaged.stateDir, "/Users/alice/.t3/dev");
+      assert.equal(packaged.displayName, "T3 Code (Dev)");
+      assert.equal(packaged.userDataDirName, "t3code-dev");
+      assert.equal(packaged.legacyUserDataDirName, "T3 Code (Dev)");
+      assert.equal(packaged.appUserModelId, "com.t3tools.t3code.dev");
+    }),
+  );
+
   it.effect("uses a configured app user model id override", () =>
     Effect.gen(function* () {
       const environment = yield* makeEnvironment(
