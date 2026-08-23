@@ -14,6 +14,7 @@ import * as Path from "effect/Path";
 import * as DesktopAppSettings from "../settings/DesktopAppSettings.ts";
 import * as DesktopConfig from "./DesktopConfig.ts";
 import { resolveDesktopBaseDir, resolveDesktopStateDir } from "./DesktopStatePaths.ts";
+import { usesIndependentPackagedDevIdentity } from "./DesktopPackagedFork.ts";
 import { isNightlyDesktopVersion } from "../updates/updateChannels.ts";
 
 export interface MakeDesktopEnvironmentInput {
@@ -37,6 +38,8 @@ export class DesktopEnvironment extends Context.Service<
     readonly processArch: string;
     readonly isPackaged: boolean;
     readonly isDevelopment: boolean;
+    /** Packaged private-fork Dev, or unpackaged Vite Dev. Independent of Nightly. */
+    readonly usesDevDesktopIdentity: boolean;
     readonly appVersion: string;
     readonly appPath: string;
     readonly resourcesPath: string;
@@ -89,9 +92,10 @@ const APP_BASE_NAME = "T3 Code";
 
 function resolveDesktopAppStageLabel(input: {
   readonly isDevelopment: boolean;
+  readonly usesDevDesktopIdentity: boolean;
   readonly appVersion: string;
 }): DesktopAppStageLabel {
-  if (input.isDevelopment) {
+  if (input.isDevelopment || input.usesDevDesktopIdentity) {
     return "Dev";
   }
 
@@ -100,6 +104,7 @@ function resolveDesktopAppStageLabel(input: {
 
 function resolveDesktopAppBranding(input: {
   readonly isDevelopment: boolean;
+  readonly usesDevDesktopIdentity: boolean;
   readonly appVersion: string;
 }): DesktopAppBranding {
   const stageLabel = resolveDesktopAppStageLabel(input);
@@ -148,6 +153,8 @@ const make = Effect.fn("desktop.environment.make")(function* (
   const homeDirectory = input.homeDirectory;
   const devServerUrl = config.devServerUrl;
   const isDevelopment = Option.isSome(devServerUrl);
+  const usesDevDesktopIdentity =
+    isDevelopment || usesIndependentPackagedDevIdentity(input.isPackaged);
   const appDataDirectory =
     input.platform === "win32"
       ? Option.getOrElse(config.appDataDirectory, () =>
@@ -169,17 +176,18 @@ const make = Effect.fn("desktop.environment.make")(function* (
       : appRoot;
   const branding = resolveDesktopAppBranding({
     isDevelopment,
+    usesDevDesktopIdentity,
     appVersion: input.appVersion,
   });
   const displayName = branding.displayName;
   const stateDir = resolveDesktopStateDir({
     baseDir,
-    isDevelopment,
+    isDevelopment: usesDevDesktopIdentity,
     joinPath: path.join,
     t3Home: config.t3Home,
   });
-  const userDataDirName = isDevelopment ? "t3code-dev" : "t3code";
-  const legacyUserDataDirName = isDevelopment ? "T3 Code (Dev)" : "T3 Code (Alpha)";
+  const userDataDirName = usesDevDesktopIdentity ? "t3code-dev" : "t3code";
+  const legacyUserDataDirName = usesDevDesktopIdentity ? "T3 Code (Dev)" : "T3 Code (Alpha)";
   const linuxApplicationsDir = path.join(
     Option.getOrElse(config.xdgDataHome, () => path.join(homeDirectory, ".local", "share")),
     "applications",
@@ -193,6 +201,7 @@ const make = Effect.fn("desktop.environment.make")(function* (
     processArch: input.processArch,
     isPackaged: input.isPackaged,
     isDevelopment,
+    usesDevDesktopIdentity,
     appVersion: input.appVersion,
     appPath: input.appPath,
     resourcesPath,
@@ -224,10 +233,10 @@ const make = Effect.fn("desktop.environment.make")(function* (
     branding,
     displayName,
     appUserModelId: Option.getOrElse(config.appUserModelIdOverride, () =>
-      isDevelopment ? "com.t3tools.t3code.dev" : "com.t3tools.t3code",
+      usesDevDesktopIdentity ? "com.t3tools.t3code.dev" : "com.t3tools.t3code",
     ),
-    linuxDesktopEntryName: isDevelopment ? "t3code-dev.desktop" : "t3code.desktop",
-    linuxWmClass: isDevelopment ? "t3code-dev" : "t3code",
+    linuxDesktopEntryName: usesDevDesktopIdentity ? "t3code-dev.desktop" : "t3code.desktop",
+    linuxWmClass: usesDevDesktopIdentity ? "t3code-dev" : "t3code",
     linuxApplicationsDir,
     appImagePath: config.appImagePath,
     userDataDirName,

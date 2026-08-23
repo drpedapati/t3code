@@ -51,7 +51,11 @@ import { Command, Flag } from "effect/unstable/cli";
 import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process";
 
 const LINUX_ICON_SIZES = [16, 22, 24, 32, 48, 64, 128, 256, 512] as const;
-const DESKTOP_APP_ID = "com.t3tools.t3code";
+// Private fork: packaged Dev must not share Nightly's bundle id or URL scheme.
+const FORK_PACKAGED_INDEPENDENT_DEV = true;
+const DESKTOP_APP_ID = FORK_PACKAGED_INDEPENDENT_DEV
+  ? "com.t3tools.t3code.dev"
+  : "com.t3tools.t3code";
 
 export function resolveDesktopAppId(): string {
   const override = process.env.T3CODE_DESKTOP_APP_ID?.trim();
@@ -2004,6 +2008,7 @@ export const resolveGitHubPublishConfig = Effect.fn("resolveGitHubPublishConfig"
     Option.getOrUndefined(env.githubRepository)?.trim() ||
     ""
   ).trim();
+  if (FORK_PACKAGED_INDEPENDENT_DEV) return undefined;
   if (!rawRepo) return undefined;
 
   const [owner, repo, ...rest] = rawRepo.split("/");
@@ -2067,6 +2072,9 @@ export function resolveDesktopProductName(version: string): string {
   const override = process.env.T3CODE_DESKTOP_PRODUCT_NAME?.trim();
   if (override) {
     return override;
+  }
+  if (FORK_PACKAGED_INDEPENDENT_DEV) {
+    return "T3 Code (Dev)";
   }
   return resolveDesktopUpdateChannel(version) === "nightly"
     ? "T3 Code (Nightly)"
@@ -2133,8 +2141,8 @@ export const createBuildConfig = Effect.fn("createBuildConfig")(function* (
         : {
             protocols: [
               {
-                name: "T3 Code",
-                schemes: ["t3code", "t3code-dev"],
+                name: FORK_PACKAGED_INDEPENDENT_DEV ? "T3 Code (Dev)" : "T3 Code",
+                schemes: FORK_PACKAGED_INDEPENDENT_DEV ? ["t3code-dev"] : ["t3code", "t3code-dev"],
               },
             ],
           }),
@@ -2182,8 +2190,8 @@ export const createBuildConfig = Effect.fn("createBuildConfig")(function* (
       // t3code:// OAuth callbacks to the app.
       protocols: [
         {
-          name: "T3 Code",
-          schemes: ["t3code", "t3code-dev"],
+          name: FORK_PACKAGED_INDEPENDENT_DEV ? "T3 Code (Dev)" : "T3 Code",
+          schemes: FORK_PACKAGED_INDEPENDENT_DEV ? ["t3code-dev"] : ["t3code", "t3code-dev"],
         },
       ],
       desktop: {
