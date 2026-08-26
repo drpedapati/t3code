@@ -4,7 +4,7 @@
 VP := $(HOME)/.vite-plus/bin/vp
 export PATH := /opt/homebrew/bin:$(HOME)/.vite-plus/bin:$(PATH)
 
-APP_NAME ?= T3 Code (Local)
+APP_NAME := T3 Code (Dev)
 APP_DEST ?= /Applications/$(APP_NAME).app
 UPSTREAM ?= https://github.com/pingdotgg/t3code.git
 
@@ -28,9 +28,6 @@ deps:
 	$(VP) i
 
 build:
-	T3CODE_DESKTOP_PRODUCT_NAME="$(APP_NAME)" \
-	T3CODE_DESKTOP_APP_ID="com.drpedapati.t3code.local" \
-	T3CODE_DESKTOP_SKIP_PROTOCOLS=1 \
 	T3CODE_DESKTOP_SKIP_PUBLISH=1 \
 	node scripts/build-desktop-artifact.ts --platform mac --target dmg --arch arm64
 
