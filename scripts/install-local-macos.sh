@@ -6,17 +6,14 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 export PATH="/opt/homebrew/bin:${HOME}/.vite-plus/bin:${PATH}"
 
-APP_NAME="${T3_LOCAL_APP_NAME:-T3 Code (Local)}"
+APP_NAME="T3 Code (Dev)"
 APP_DEST="${T3_LOCAL_APP_DEST:-/Applications/${APP_NAME}.app}"
 ARCH="${T3_LOCAL_ARCH:-arm64}"
 PLATFORM="${T3_LOCAL_PLATFORM:-mac}"
 TARGET="${T3_LOCAL_TARGET:-dmg}"
 
-# Distinct from official Alpha: separate bundle id, Dock name, user data,
-# no t3code:// handler, no GitHub auto-update channel.
-export T3CODE_DESKTOP_PRODUCT_NAME="${T3CODE_DESKTOP_PRODUCT_NAME:-${APP_NAME}}"
-export T3CODE_DESKTOP_APP_ID="${T3CODE_DESKTOP_APP_ID:-com.drpedapati.t3code.local}"
-export T3CODE_DESKTOP_SKIP_PROTOCOLS="${T3CODE_DESKTOP_SKIP_PROTOCOLS:-1}"
+# Packaged Dev uses a distinct bundle ID, Dock name, user data, and URL scheme.
+# Local releases never publish to GitHub's updater channel.
 export T3CODE_DESKTOP_SKIP_PUBLISH="${T3CODE_DESKTOP_SKIP_PUBLISH:-1}"
 
 cd "$ROOT"
@@ -33,7 +30,7 @@ fi
 echo "==> installing workspace deps"
 vp i
 
-echo "==> building unsigned ${PLATFORM}/${TARGET} (${ARCH}) as ${T3CODE_DESKTOP_PRODUCT_NAME}"
+echo "==> building unsigned ${PLATFORM}/${TARGET} (${ARCH}) as ${APP_NAME}"
 node scripts/build-desktop-artifact.ts \
   --platform "$PLATFORM" \
   --target "$TARGET" \
