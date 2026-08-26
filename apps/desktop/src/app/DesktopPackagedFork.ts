@@ -4,8 +4,6 @@
  */
 export const PACKAGED_INDEPENDENT_DEV = true;
 
-export const FORK_PACKAGED_APP_ID = "com.t3tools.t3code.dev";
-
 export function usesIndependentPackagedDevIdentity(isPackaged: boolean): boolean {
   return PACKAGED_INDEPENDENT_DEV && isPackaged;
 }
