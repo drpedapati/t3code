@@ -32,6 +32,7 @@ import * as ElectronTheme from "./electron/ElectronTheme.ts";
 import * as ElectronUpdater from "./electron/ElectronUpdater.ts";
 import * as ElectronWindow from "./electron/ElectronWindow.ts";
 import * as DesktopApp from "./app/DesktopApp.ts";
+import { remoteCliVersionForDesktop } from "./app/DesktopPackagedFork.ts";
 import * as DesktopAppActivation from "./app/DesktopAppActivation.ts";
 import * as DesktopAppIdentity from "./app/DesktopAppIdentity.ts";
 import * as DesktopConnectionCatalogStore from "./app/DesktopConnectionCatalogStore.ts";
@@ -97,7 +98,7 @@ const resolveDesktopSshCliRunner = (
   }
   return {
     packageSpec: resolveRemoteT3CliPackageSpec({
-      appVersion: environment.appVersion,
+      appVersion: remoteCliVersionForDesktop(environment.appVersion, environment.isPackaged),
       updateChannel: settings.updateChannel,
       isDevelopment: environment.isDevelopment,
     }),
