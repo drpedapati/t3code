@@ -1042,25 +1042,21 @@ export const TRANSCRIPT_KEYBOARD_LINE_PX = 48;
 
 export function transcriptKeyboardScrollDelta(input: {
   direction: "up" | "down";
-  unit: "page" | "line";
-  viewportPx: number;
 }): number {
-  const magnitude =
-    input.unit === "page" ? Math.max(1, input.viewportPx) * 0.9 : TRANSCRIPT_KEYBOARD_LINE_PX;
-  return magnitude * (input.direction === "up" ? -1 : 1);
+  return TRANSCRIPT_KEYBOARD_LINE_PX * (input.direction === "up" ? -1 : 1);
 }
 
-export function composerOverflowConsumesPageKey(input: {
+export function transcriptKeyboardScrollTargetOffset(input: {
+  contentLength: number;
   direction: "up" | "down";
-  scrollTop: number;
-  scrollHeight: number;
-  clientHeight: number;
-}): boolean {
-  const maxScroll = input.scrollHeight - input.clientHeight;
-  if (maxScroll <= 1) {
-    return false;
-  }
-  return input.direction === "up" ? input.scrollTop > 1 : input.scrollTop < maxScroll - 1;
+  scroll: number;
+  scrollLength: number;
+}): number {
+  const maxScroll = Math.max(0, input.contentLength - input.scrollLength);
+  return Math.min(
+    maxScroll,
+    Math.max(0, input.scroll + transcriptKeyboardScrollDelta({ direction: input.direction })),
+  );
 }
 
 export function shouldScrollTranscriptFromComposerArrow(input: {

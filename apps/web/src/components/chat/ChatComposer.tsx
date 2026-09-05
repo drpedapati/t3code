@@ -1300,7 +1300,7 @@ export interface ChatComposerProps {
   scheduleComposerFocus: () => void;
   setThreadError: (threadId: ThreadId | null, error: string | null) => void;
   onExpandImage: (preview: ExpandedImagePreview) => void;
-  onTranscriptKeyboardScroll?: (direction: "up" | "down", unit: "page" | "line") => boolean;
+  onTranscriptKeyboardScroll?: (direction: "up" | "down") => boolean;
   onFileOpen: (attachment: ChatFileAttachment) => void;
 }
 
@@ -3103,7 +3103,7 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
             blocked: isStashMenuOpen,
           })
         ) {
-          return onTranscriptKeyboardScroll(key === "ArrowUp" ? "up" : "down", "line");
+          return onTranscriptKeyboardScroll(key === "ArrowUp" ? "up" : "down");
         }
       }
       return navigatePromptHistory(key === "ArrowUp" ? "backward" : "forward", event);
@@ -5494,16 +5494,6 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
                   onChange={onPromptChange}
                   onVisibleSelectionChange={expandComposerForEditorChange}
                   onCommandKeyDown={onComposerCommandKey}
-                  {...(onTranscriptKeyboardScroll
-                    ? {
-                        onTranscriptPageScroll: (direction: "up" | "down") => {
-                          if (composerMenuOpenRef.current || isStashMenuOpen) {
-                            return false;
-                          }
-                          return onTranscriptKeyboardScroll(direction, "page");
-                        },
-                      }
-                    : {})}
                   onPageScrollKeyDown={onPageScrollKeyDown}
                   onPageScrollKeyUp={onPageScrollKeyUp}
                   onPageScrollRelease={onPageScrollRelease}

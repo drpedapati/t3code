@@ -394,7 +394,7 @@ import {
   revokeUserMessagePreviewUrls,
   shouldWriteThreadErrorToCurrentServerThread,
   startNewThreadForProject,
-  transcriptKeyboardScrollDelta,
+  transcriptKeyboardScrollTargetOffset,
   codexArtifactTemplatePromptToAppend,
   toolGroupConsumesUpwardNavigation,
   waitForStartedServerThread,
@@ -4582,26 +4582,23 @@ export default function ChatView(props: ChatViewProps) {
     });
   }, []);
   const scrollTranscriptBy = useCallback(
-    (direction: "up" | "down", unit: "page" | "line") => {
+    (direction: "up" | "down") => {
       const list = legendListRef.current;
       if (!list) {
         return false;
       }
       const state = list.getState();
-      const viewport = Math.max(
-        1,
-        (state.scrollLength ?? 0) - composerOverlayHeight - CHAT_TIMELINE_ANCHOR_OFFSET,
-      );
-      const delta = transcriptKeyboardScrollDelta({
-        direction,
-        unit,
-        viewportPx: viewport,
-      });
       const current = state.scroll ?? 0;
-      const next = Math.max(0, current + delta);
+      const next = transcriptKeyboardScrollTargetOffset({
+        contentLength: state.contentLength ?? current,
+        direction,
+        scroll: current,
+        scrollLength: state.scrollLength ?? 0,
+      });
       if (Math.abs(next - current) < 0.5) {
         return false;
       }
+      const delta = next - current;
       if (delta < 0 && timelineRealContentOverflowsViewport()) {
         cancelTimelineLiveFollowForUserNavigation();
       }
@@ -4610,7 +4607,6 @@ export default function ChatView(props: ChatViewProps) {
     },
     [
       cancelTimelineLiveFollowForUserNavigation,
-      composerOverlayHeight,
       timelineRealContentOverflowsViewport,
     ],
   );

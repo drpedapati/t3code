@@ -56,9 +56,9 @@ import {
   shouldShowBranchMismatchBanner,
   shouldShowPlanFollowUpPrompt,
   shouldWriteThreadErrorToCurrentServerThread,
-  composerOverflowConsumesPageKey,
   shouldScrollTranscriptFromComposerArrow,
   transcriptKeyboardScrollDelta,
+  transcriptKeyboardScrollTargetOffset,
   toolGroupConsumesUpwardNavigation,
 } from "./ChatView.logic";
 
@@ -1742,32 +1742,28 @@ describe("hasServerAcknowledgedLocalDispatch", () => {
 });
 
 describe("composer transcript keyboard scroll", () => {
-  it("pages by 90% of the viewport and lines by a fixed step", () => {
-    expect(transcriptKeyboardScrollDelta({ direction: "up", unit: "page", viewportPx: 1000 })).toBe(
-      -900,
-    );
-    expect(
-      transcriptKeyboardScrollDelta({ direction: "down", unit: "line", viewportPx: 1000 }),
-    ).toBe(48);
+  it("scrolls by a fixed line step", () => {
+    expect(transcriptKeyboardScrollDelta({ direction: "up" })).toBe(-48);
+    expect(transcriptKeyboardScrollDelta({ direction: "down" })).toBe(48);
   });
 
-  it("lets the composer consume PageUp only while it can still scroll", () => {
+  it("stops at the transcript boundaries so unhandled arrows can use their fallback", () => {
     expect(
-      composerOverflowConsumesPageKey({
+      transcriptKeyboardScrollTargetOffset({
+        contentLength: 2_000,
         direction: "up",
-        scrollTop: 0,
-        scrollHeight: 400,
-        clientHeight: 80,
+        scroll: 0,
+        scrollLength: 800,
       }),
-    ).toBe(false);
+    ).toBe(0);
     expect(
-      composerOverflowConsumesPageKey({
-        direction: "up",
-        scrollTop: 40,
-        scrollHeight: 400,
-        clientHeight: 80,
+      transcriptKeyboardScrollTargetOffset({
+        contentLength: 2_000,
+        direction: "down",
+        scroll: 1_200,
+        scrollLength: 800,
       }),
-    ).toBe(true);
+    ).toBe(1_200);
   });
 
   it("scrolls the transcript from an empty prompt or a caret at the edge", () => {
