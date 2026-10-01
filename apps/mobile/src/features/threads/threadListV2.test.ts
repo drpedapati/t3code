@@ -841,8 +841,8 @@ describe("adjacentThreadTarget", () => {
     const otherEnvironmentId = EnvironmentId.make("environment-2");
     const first = makeThread({
       id: ThreadId.make("same-id"),
-      title: "match first",
-      createdAt: "2026-06-02T02:00:00.000Z",
+      title: "match",
+      createdAt: "2026-06-02T00:00:00.000Z",
     });
     const second = makeThread({
       id: first.id,
@@ -879,7 +879,9 @@ describe("adjacentThreadTarget", () => {
   it("has no neighbor for an empty list or the sole thread", () => {
     const thread = makeThread({ id: ThreadId.make("only"), title: "Only" });
     const items = buildThreadListV2ListItems({
-      items: [{ thread, variant: "card", snoozed: false, pinned: false, isLast: true }],
+      items: [
+        { thread, variant: "card", snoozed: false, pinned: false, isLast: true, wokeAt: null },
+      ],
       pendingTasks: [],
     });
     const key = scopedThreadKey(environmentId, thread.id);

@@ -15,7 +15,16 @@ import { EnvironmentId, ThreadId, type SidebarProjectGroupingMode } from "@t3too
 import { useAtomValue } from "@effect/atom-react";
 import { useFocusEffect } from "@react-navigation/native";
 import { NavigationContext, NavigationRouteContext, useNavigation } from "@react-navigation/native";
-import { useCallback, use, useDeferredValue, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import {
+  useCallback,
+  use,
+  useDeferredValue,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { Keyboard, Platform, useWindowDimensions, View } from "react-native";
 import { KeyboardController, useKeyboardState } from "react-native-keyboard-controller";
 import Animated, {
@@ -73,7 +82,11 @@ import { HomeListOptionsProvider } from "../home/home-list-options";
 import { newTaskDestination } from "../threads/new-task-project-selection";
 import { usePendingTaskListActions } from "../home/usePendingTaskListActions";
 import { ThreadNavigationRegistrationContext } from "../threads/thread-navigation-context";
-import { adjacentThreadTarget, type ThreadNavigationDirection, type ThreadNavigationListItem } from "../threads/thread-navigation";
+import {
+  adjacentThreadTarget,
+  type ThreadNavigationDirection,
+  type ThreadNavigationListItem,
+} from "../threads/thread-navigation";
 import { ThreadNavigationSidebar } from "../threads/ThreadNavigationSidebar";
 import { useOpenThreadPullRequests } from "../threads/use-open-thread-pull-requests";
 import { RenderErrorBoundary, RenderFailureView } from "../../components/RenderErrorBoundary";
@@ -858,19 +871,22 @@ function AdaptiveWorkspaceLayoutContent(
   if (nativeWorkspace) {
     return (
       <ThreadNavigationRegistrationContext value={registerThreadNavigationItems}>
-<HomeListOptionsProvider
-        projectGroupingMode={projectGroupingMode}
-        savedFilters={props.savedThreadListFilters}
-      >
-        <AdaptiveWorkspaceContext value={contextValue}>
-          <NativeWorkspaceInspectorContext
-            value={{ render: workspaceInspector?.render, visible: inspectorColumnTargetWidth > 0 }}
-          >
-            {props.children}
-          </NativeWorkspaceInspectorContext>
-        </AdaptiveWorkspaceContext>
-      </HomeListOptionsProvider>
-</ThreadNavigationRegistrationContext>
+        <HomeListOptionsProvider
+          projectGroupingMode={projectGroupingMode}
+          savedFilters={props.savedThreadListFilters}
+        >
+          <AdaptiveWorkspaceContext value={contextValue}>
+            <NativeWorkspaceInspectorContext
+              value={{
+                render: workspaceInspector?.render,
+                visible: inspectorColumnTargetWidth > 0,
+              }}
+            >
+              {props.children}
+            </NativeWorkspaceInspectorContext>
+          </AdaptiveWorkspaceContext>
+        </HomeListOptionsProvider>
+      </ThreadNavigationRegistrationContext>
     );
   }
   const renderColumns = (children: ReactNode) => (
@@ -1040,22 +1056,22 @@ function AdaptiveWorkspaceLayoutContent(
 
   return (
     <ThreadNavigationRegistrationContext value={registerThreadNavigationItems}>
-<HomeListOptionsProvider
-      projectGroupingMode={projectGroupingMode}
-      savedFilters={props.savedThreadListFilters}
-    >
-      <AdaptiveWorkspaceContext.Provider value={contextValue}>
-        <WindowHingeContext value={windowHinge}>
-          {usesPresentationHost ? (
-            <WorkspaceColumnsRendererContext value={renderColumns}>
-              {props.children}
-            </WorkspaceColumnsRendererContext>
-          ) : (
-            renderColumns(props.children)
-          )}
-        </WindowHingeContext>
-      </AdaptiveWorkspaceContext.Provider>
-    </HomeListOptionsProvider>
-</ThreadNavigationRegistrationContext>
+      <HomeListOptionsProvider
+        projectGroupingMode={projectGroupingMode}
+        savedFilters={props.savedThreadListFilters}
+      >
+        <AdaptiveWorkspaceContext.Provider value={contextValue}>
+          <WindowHingeContext value={windowHinge}>
+            {usesPresentationHost ? (
+              <WorkspaceColumnsRendererContext value={renderColumns}>
+                {props.children}
+              </WorkspaceColumnsRendererContext>
+            ) : (
+              renderColumns(props.children)
+            )}
+          </WindowHingeContext>
+        </AdaptiveWorkspaceContext.Provider>
+      </HomeListOptionsProvider>
+    </ThreadNavigationRegistrationContext>
   );
 }

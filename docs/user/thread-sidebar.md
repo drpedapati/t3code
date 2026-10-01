@@ -54,7 +54,8 @@ and worktree while you stay in the new thread composer. This requires a Git proj
 Swipe left across the composer to open the next thread, or right to open the
 previous, following the order in your thread list. Swiping stops at either end and
 skips threads hidden by your current filters or collapsed shelves. While typing,
-swipe across the toolbar below the text rather than the editor. Each thread keeps
+start the swipe on the attachment or model/send controls, leaving the editor for
+text selection. Each thread keeps
 its own draft. Use the normal Back gesture to return to the thread list.
 
 ## Pin and reorder threads
