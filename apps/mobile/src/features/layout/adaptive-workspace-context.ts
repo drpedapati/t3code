@@ -1,3 +1,4 @@
+import type { ThreadNavigationDirection } from "../threads/thread-navigation";
 import type { WorkspaceTab } from "./workspace/workspace-tabs-state";
 import { createContext, use } from "react";
 import type { InspectorContent } from "./inspector-panes";
@@ -14,6 +15,7 @@ import {
 /** The workspace's actions; their identities never change. */
 export interface AdaptiveWorkspaceActions {
   readonly startNewTask: () => void;
+  readonly selectAdjacentThread: (currentThreadKey: string, direction: ThreadNavigationDirection) => void;
   /** Use `useSelectWorkspaceDetail`, which also works outside the layout. */
   readonly selectDetail?: (detail: WorkspaceDetail, sheet?: WorkspaceDetailSheet) => void;
   readonly registerWorkspaceInspector: (
@@ -77,6 +79,7 @@ const compactFileInspector = deriveFileInspectorPaneLayout({
 export const AdaptiveWorkspaceContext = createContext<AdaptiveWorkspaceLayoutValue>({
   layout: compactLayout,
   startNewTask: () => undefined,
+  selectAdjacentThread: () => undefined,
   registerWorkspaceInspector: () => () => undefined,
   setPrimarySidebarSearchQuery: () => undefined,
   showInspector: () => undefined,

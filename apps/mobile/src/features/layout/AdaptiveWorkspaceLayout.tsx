@@ -1,3 +1,6 @@
+import { scopedThreadKey } from "../../lib/scopedEntities";
+import { ThreadNavigationRegistrationContext } from "../threads/thread-navigation-context";
+import { adjacentThreadTarget, type ThreadNavigationDirection, type ThreadNavigationListItem } from "../threads/thread-navigation";
 import {
   WorkspaceColumnsRendererContext,
   WorkspacePresentationHostContext,
@@ -18,6 +21,7 @@ import { useAtomValue } from "@effect/atom-react";
 import { NavigationContext, NavigationRouteContext, useNavigation } from "@react-navigation/native";
 import {
   use,
+  useCallback,
   useEffect,
   useEffectEvent,
   useLayoutEffect,
@@ -205,6 +209,7 @@ function useStableActions(actions: Required<AdaptiveWorkspaceActions>): Adaptive
   });
   const [stable] = useState((): AdaptiveWorkspaceActions => ({
     startNewTask: () => latest.current.startNewTask(),
+    selectAdjacentThread: (key, direction) => latest.current.selectAdjacentThread(key, direction),
     selectDetail: (detail, sheet) => latest.current.selectDetail(detail, sheet),
     registerWorkspaceInspector: (content, routeKey, revealKey) =>
       latest.current.registerWorkspaceInspector(content, routeKey, revealKey),
@@ -265,6 +270,13 @@ function AdaptiveWorkspaceLayoutContent(
   const nativeMetrics = useNativeLayoutMetrics();
   const { width: viewportWidth, height } = nativeMetrics ?? windowDimensions;
   const pathname = props.pathname;
+  const threadNavigationItems = useRef<ReadonlyArray<ThreadNavigationListItem>>([]);
+  const registerThreadNavigationItems = useCallback((items: ReadonlyArray<ThreadNavigationListItem>) => {
+    threadNavigationItems.current = items;
+    return () => {
+      if (threadNavigationItems.current === items) threadNavigationItems.current = [];
+    };
+  }, []);
   const workspace = useWorkspaceTabs();
   // Settings and Usage occupy the workspace rather than a list/detail pair.
   const androidSettingsOpen = useAndroidWorkspaceRoot()?.settingsOpen ?? false;
@@ -934,7 +946,14 @@ function AdaptiveWorkspaceLayoutContent(
     [sidebarInLandscape, sidebarInPortrait, sidebarOverRotates],
   );
 
+  const selectAdjacentThread = (currentThreadKey: string, direction: ThreadNavigationDirection) => {
+    const active = parseActiveThreadPath(pathname);
+    if (active === null || scopedThreadKey(active.environmentId, active.threadId) !== currentThreadKey) return;
+    const target = adjacentThreadTarget(threadNavigationItems.current, currentThreadKey, direction);
+    if (target !== null) handleSelectThreadRoute({ environmentId: target.environmentId, threadId: target.id });
+  };
   const actions = useStableActions({
+    selectAdjacentThread,
     startNewTask: handleStartNewTask,
     selectDetail: handleSelectDetail,
     registerWorkspaceInspector,
@@ -974,7 +993,8 @@ function AdaptiveWorkspaceLayoutContent(
   );
   if (nativeWorkspace) {
     return (
-      <HomeListOptionsProvider
+      <ThreadNavigationRegistrationContext value={registerThreadNavigationItems}>
+<HomeListOptionsProvider
         projectGroupingMode={projectGroupingMode}
         savedFilters={props.savedThreadListFilters}
       >
@@ -993,6 +1013,7 @@ function AdaptiveWorkspaceLayoutContent(
           </WorkspacePaneStateContext>
         </AdaptiveWorkspaceContext>
       </HomeListOptionsProvider>
+</ThreadNavigationRegistrationContext>
     );
   }
   const renderColumns = (children: ReactNode, sidebar?: ReactNode) => (
@@ -1170,7 +1191,8 @@ function AdaptiveWorkspaceLayoutContent(
   );
 
   return (
-    <HomeListOptionsProvider
+    <ThreadNavigationRegistrationContext value={registerThreadNavigationItems}>
+<HomeListOptionsProvider
       projectGroupingMode={projectGroupingMode}
       savedFilters={props.savedThreadListFilters}
     >
@@ -1188,5 +1210,6 @@ function AdaptiveWorkspaceLayoutContent(
         </WorkspacePaneStateContext>
       </AdaptiveWorkspaceContext>
     </HomeListOptionsProvider>
+</ThreadNavigationRegistrationContext>
   );
 }
