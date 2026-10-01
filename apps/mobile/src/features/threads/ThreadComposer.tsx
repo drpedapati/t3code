@@ -37,6 +37,7 @@ import { Alert, Keyboard, Platform, Pressable, View, type ViewStyle } from "reac
 import { composerImageGallery } from "../../lib/composerImageGallery";
 import { filePreviewGallery } from "../../lib/filePreviewGallery";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
+import { PanPriorityView } from "../../native/PanPriorityView";
 import { FilePreviewModal, type FilePreviewSource } from "../../components/FilePreviewModal";
 import {
   composerAttachmentUploadBlockReason,
@@ -260,6 +261,7 @@ const COMPOSER_ATTACHMENT_ENTERING =
     : FadeIn.delay(COMPOSER_TRANSITION_DURATION_MS).duration(160).reduceMotion(ReduceMotion.System);
 
 const AnimatedGlassSurface = Animated.createAnimatedComponent(GlassSurface);
+const AnimatedPanPriorityView = Animated.createAnimatedComponent(PanPriorityView);
 
 const FOLLOW_UP_ACTION_LABEL = {
   queue: "Queue",
@@ -346,7 +348,7 @@ export function ComposerSurface(props: {
   // Each native frame follows the same transition. Animating only the outer
   // clip leaves the glass and content at their final height on the first frame.
   return (
-    <Animated.View
+    <AnimatedPanPriorityView
       collapsable={false}
       className={
         Platform.OS === "android" ? undefined : "shadow-[0_6px_28px] shadow-adaptive-black-a15-a35"
@@ -380,7 +382,7 @@ export function ComposerSurface(props: {
       >
         {props.children}
       </Animated.View>
-    </Animated.View>
+    </AnimatedPanPriorityView>
   );
 }
 
@@ -1153,7 +1155,7 @@ export const ThreadComposer = memo(function ThreadComposer(props: ThreadComposer
               {isExpanded ? <View className="h-1" /> : null}
             </ComposerDictationDraftContent>
             <GestureDetector gesture={toolbarThreadSwipe}>
-              <Animated.View
+              <AnimatedPanPriorityView
                 accessibilityElementsHidden={!isToolbarVisible}
                 collapsable={false}
                 importantForAccessibility={isToolbarVisible ? "auto" : "no-hide-descendants"}
@@ -1247,7 +1249,7 @@ export const ThreadComposer = memo(function ThreadComposer(props: ThreadComposer
                     </View>
                   </ComposerToolbarRow>
                 </ComposerDictationToolbar>
-              </Animated.View>
+              </AnimatedPanPriorityView>
             </GestureDetector>
           </ComposerSurface>
         </GestureDetector>

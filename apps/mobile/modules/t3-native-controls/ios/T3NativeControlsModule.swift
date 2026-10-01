@@ -23,6 +23,9 @@ public final class T3NativeControlsModule: Module {
       ViewName("LayoutMetrics")
       Events("onMetricsChange")
     }
+    View(T3PanPriorityView.self) {
+      ViewName("PanPriority")
+    }
 
     AsyncFunction("presentVideo") { (url: URL, title: String, sourceIdentifier: String, identifier: String, promise: Promise) in
       try self.presentVideo(
