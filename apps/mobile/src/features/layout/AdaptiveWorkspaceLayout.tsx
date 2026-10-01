@@ -15,7 +15,7 @@ import { EnvironmentId, ThreadId, type SidebarProjectGroupingMode } from "@t3too
 import { useAtomValue } from "@effect/atom-react";
 import { useFocusEffect } from "@react-navigation/native";
 import { NavigationContext, NavigationRouteContext, useNavigation } from "@react-navigation/native";
-import { use, useDeferredValue, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useCallback, use, useDeferredValue, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Keyboard, Platform, useWindowDimensions, View } from "react-native";
 import { KeyboardController, useKeyboardState } from "react-native-keyboard-controller";
 import Animated, {
@@ -72,6 +72,8 @@ import { useWorkspaceTabs } from "../workspace/WorkspaceTabsContext";
 import { HomeListOptionsProvider } from "../home/home-list-options";
 import { newTaskDestination } from "../threads/new-task-project-selection";
 import { usePendingTaskListActions } from "../home/usePendingTaskListActions";
+import { ThreadNavigationRegistrationContext } from "../threads/thread-navigation-context";
+import { adjacentThreadTarget, type ThreadNavigationDirection, type ThreadNavigationListItem } from "../threads/thread-navigation";
 import { ThreadNavigationSidebar } from "../threads/ThreadNavigationSidebar";
 import { useOpenThreadPullRequests } from "../threads/use-open-thread-pull-requests";
 import { RenderErrorBoundary, RenderFailureView } from "../../components/RenderErrorBoundary";
@@ -193,6 +195,16 @@ function AdaptiveWorkspaceLayoutContent(
     Platform.OS === "android" && (androidSettingsOpen || workspace?.state.selectedTab === "usage");
   const navigation = useNavigation();
   const activeRoleOwner = useRef<symbol | null>(null);
+  const threadNavigationItems = useRef<ReadonlyArray<ThreadNavigationListItem>>([]);
+  const registerThreadNavigationItems = useCallback(
+    (items: ReadonlyArray<ThreadNavigationListItem>) => {
+      threadNavigationItems.current = items;
+      return () => {
+        if (threadNavigationItems.current === items) threadNavigationItems.current = [];
+      };
+    },
+    [],
+  );
   const [primarySidebarPreferredVisible, setPrimarySidebarPreferredVisible] = useState(true);
   const [supplementaryPanePreferredVisible, setSupplementaryPanePreferredVisible] = useState(true);
   const [supplementaryPanePreferredWidth, setSupplementaryPanePreferredWidth] = useState<
@@ -808,6 +820,19 @@ function AdaptiveWorkspaceLayoutContent(
     [sidebarInLandscape, sidebarInPortrait, sidebarOverRotates],
   );
 
+  const selectAdjacentThread = useCallback(
+    (currentThreadKey: string, direction: ThreadNavigationDirection) => {
+      if (currentThreadKey !== selectedThreadKey) return;
+      const target = adjacentThreadTarget(
+        threadNavigationItems.current,
+        currentThreadKey,
+        direction,
+      );
+      if (target !== null) handleSelectThread(target);
+    },
+    [handleSelectThread, selectedThreadKey],
+  );
+
   const contextValue = {
     layout,
     panes,
@@ -815,6 +840,7 @@ function AdaptiveWorkspaceLayoutContent(
     primarySidebarSearchQuery,
     startNewTask: handleStartNewTask,
     selectDetail: handleSelectDetail,
+    selectAdjacentThread,
     activateAuxiliaryPaneRole,
     registerWorkspaceInspector,
     setPrimarySidebarSearchQuery,
@@ -831,7 +857,8 @@ function AdaptiveWorkspaceLayoutContent(
 
   if (nativeWorkspace) {
     return (
-      <HomeListOptionsProvider
+      <ThreadNavigationRegistrationContext value={registerThreadNavigationItems}>
+<HomeListOptionsProvider
         projectGroupingMode={projectGroupingMode}
         savedFilters={props.savedThreadListFilters}
       >
@@ -843,6 +870,7 @@ function AdaptiveWorkspaceLayoutContent(
           </NativeWorkspaceInspectorContext>
         </AdaptiveWorkspaceContext>
       </HomeListOptionsProvider>
+</ThreadNavigationRegistrationContext>
     );
   }
   const renderColumns = (children: ReactNode) => (
@@ -1011,7 +1039,8 @@ function AdaptiveWorkspaceLayoutContent(
   );
 
   return (
-    <HomeListOptionsProvider
+    <ThreadNavigationRegistrationContext value={registerThreadNavigationItems}>
+<HomeListOptionsProvider
       projectGroupingMode={projectGroupingMode}
       savedFilters={props.savedThreadListFilters}
     >
@@ -1027,5 +1056,6 @@ function AdaptiveWorkspaceLayoutContent(
         </WindowHingeContext>
       </AdaptiveWorkspaceContext.Provider>
     </HomeListOptionsProvider>
+</ThreadNavigationRegistrationContext>
   );
 }

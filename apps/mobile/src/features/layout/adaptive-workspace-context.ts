@@ -1,3 +1,4 @@
+import type { ThreadNavigationDirection } from "../threads/thread-navigation";
 import type { WorkspaceTab } from "../workspace/workspace-tabs-state";
 import { createContext, use, type ReactNode } from "react";
 import type {
@@ -22,6 +23,7 @@ interface AdaptiveWorkspaceContextValue {
   readonly startNewTask: () => void;
   /** Use `useSelectWorkspaceDetail`, which also works outside the layout. */
   readonly selectDetail?: (detail: WorkspaceDetail, sheet?: WorkspaceDetailSheet) => void;
+  readonly selectAdjacentThread: (currentThreadKey: string, direction: ThreadNavigationDirection) => void;
   readonly activateAuxiliaryPaneRole: (role: WorkspaceAuxiliaryPaneRole) => () => void;
   readonly registerWorkspaceInspector: (render: () => ReactNode) => () => void;
   readonly setPrimarySidebarSearchQuery: (query: string) => void;
@@ -66,6 +68,7 @@ export const AdaptiveWorkspaceContext = createContext<AdaptiveWorkspaceContextVa
   fileInspector: compactFileInspector,
   primarySidebarSearchQuery: "",
   startNewTask: () => undefined,
+  selectAdjacentThread: () => undefined,
   activateAuxiliaryPaneRole: () => () => undefined,
   registerWorkspaceInspector: () => () => undefined,
   setPrimarySidebarSearchQuery: () => undefined,
