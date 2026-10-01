@@ -1,8 +1,8 @@
+import { useAdaptiveWorkspaceLayout } from "../layout/AdaptiveWorkspaceLayout";
 import { useSidebarWorkspaceTabs } from "../workspace/useSystemWorkspaceTabBar";
 import { Button } from "../../components/ui/Button";
 import * as Dialog from "../../components/ui/Dialog";
 import type { ComposerTextPaste } from "../../native/T3ComposerEditor.types";
-import { useAdaptiveWorkspaceLayout } from "../layout/AdaptiveWorkspaceLayout";
 import { useAppearancePreferences } from "../settings/appearance/AppearancePreferencesProvider";
 import type { EnvironmentThreadShell } from "@t3tools/client-runtime/state/shell";
 import { settlePromise, squashAtomCommandFailure } from "@t3tools/client-runtime/state/runtime";
@@ -32,11 +32,14 @@ import {
   useEffect,
   useEffectEvent,
   useLayoutEffect,
+  useMemo,
   useRef,
   useState,
   type RefObject,
 } from "react";
 import { Keyboard, Platform, View, type ViewStyle } from "react-native";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
+import { COMPOSER_SWIPE_ACTIVATION_DISTANCE, COMPOSER_SWIPE_MAX_VERTICAL_DISTANCE, composerThreadSwipeDirection } from "./thread-navigation";
 import { composerImageGallery } from "../../lib/composerImageGallery";
 import { filePreviewGallery } from "../../lib/filePreviewGallery";
 import { FilePreviewModal, type FilePreviewSource } from "../../components/FilePreviewModal";
@@ -364,6 +367,7 @@ export function ComposerSurface(props: {
   // Animate every native frame or glass and content jump to final height inside the clip.
   return (
     <Animated.View
+      collapsable={false}
       className={
         Platform.OS === "android" ? undefined : "shadow-[0_6px_28px] shadow-adaptive-black-a15-a35"
       }
@@ -406,6 +410,7 @@ export const ThreadComposer = function ThreadComposer(props: ThreadComposerProps
   const { themeVariables: materialTheme } = useAppearancePreferences();
   const composerPanel = materialTheme["--color-composer-panel"];
   const navigation = useNavigation();
+  const { selectAdjacentThread } = useAdaptiveWorkspaceLayout();
   const foregroundColor = useUniwindTheme()["--color-foreground"];
   const bodyText = useScaledTextRole("body");
   const fallbackInputRef = useRef<ComposerEditorHandle>(null);
@@ -440,6 +445,12 @@ export const ThreadComposer = function ThreadComposer(props: ThreadComposerProps
   const [previewVideo, setPreviewVideo] = useState<VideoPreviewSource | null>(null);
   const composerOwnerKey = scopedThreadKey(props.environmentId, props.selectedThread.id);
   const composerDraftKey = props.draftKey ?? composerOwnerKey;
+  const threadSwipeOriginRef = useRef<string | null>(null);
+  useLayoutEffect(() => {
+    // Invalidate before RNGH replaces its callbacks on the reused editor.
+    if (threadSwipeOriginRef.current !== composerOwnerKey) threadSwipeOriginRef.current = null;
+  }, [composerOwnerKey]);
+
   const { text: draftMessage, attachments: draftAttachments } = useComposerDraft(composerDraftKey);
   const queuedEdit = props.queuedEdit ?? null;
   const hasContent =
@@ -578,6 +589,39 @@ export const ThreadComposer = function ThreadComposer(props: ThreadComposerProps
   const hasEditingAttachments =
     (queuedEdit !== null && queuedEdit.existingAttachments.length > 0) ||
     stripAttachments.length > 0;
+  const [compactThreadSwipe, toolbarThreadSwipe] = useMemo(() => {
+    const swipe = (enabled: boolean) =>
+      Gesture.Pan()
+        .enabled(enabled && !isVoiceInputPresented)
+        .runOnJS(true)
+        .maxPointers(1)
+        // Leave the screen edges to native back navigation.
+        .hitSlop({ left: -16, right: -16 })
+        .activeOffsetX([-COMPOSER_SWIPE_ACTIVATION_DISTANCE, COMPOSER_SWIPE_ACTIVATION_DISTANCE])
+        .failOffsetY([-COMPOSER_SWIPE_MAX_VERTICAL_DISTANCE, COMPOSER_SWIPE_MAX_VERTICAL_DISTANCE])
+        .onBegin(() => {
+          threadSwipeOriginRef.current = composerOwnerKey;
+        })
+        .onEnd((event, success) => {
+          const direction = composerThreadSwipeDirection(
+            event.translationX,
+            event.translationY,
+            success,
+            {
+              originThreadKey: threadSwipeOriginRef.current,
+              currentThreadKey: composerOwnerKey,
+            },
+          );
+          if (direction !== null) selectAdjacentThread(composerOwnerKey, direction);
+        })
+        .onFinalize(() => {
+          threadSwipeOriginRef.current = null;
+        });
+    // An expanded editor owns its native selection and scroll gestures; only
+    // its toolbar swipes. The resting pill provides the full-width target.
+    // oxlint-disable-next-line react/refs -- RNGH stores callbacks; construction does not invoke them.
+    return [swipe(!isExpanded), swipe(isExpanded)] as const;
+  }, [composerOwnerKey, isExpanded, isVoiceInputPresented, selectAdjacentThread]);
   const attachmentBlockReason = composerAttachmentUploadBlockReason({
     environmentId: props.environmentId,
     attachments: draftAttachments,
@@ -856,6 +900,7 @@ export const ThreadComposer = function ThreadComposer(props: ThreadComposerProps
           />
         ) : null}
 
+        <GestureDetector gesture={compactThreadSwipe}>
         <ComposerSurface
           animateLayout={false}
           style={{
@@ -1108,6 +1153,7 @@ export const ThreadComposer = function ThreadComposer(props: ThreadComposerProps
               />
             </Animated.View>
           </View>
+          <GestureDetector gesture={toolbarThreadSwipe}>
           <Animated.View
             accessibilityElementsHidden={!isToolbarVisible}
             collapsable={false}
@@ -1190,7 +1236,9 @@ export const ThreadComposer = function ThreadComposer(props: ThreadComposerProps
               </ComposerToolbarRow>
             </ComposerDictationToolbar>
           </Animated.View>
+          </GestureDetector>
         </ComposerSurface>
+        </GestureDetector>
 
         {props.connectionState === "connected" && !props.canOperateThread ? (
           <Text className="pt-2 text-xs text-foreground-muted">
