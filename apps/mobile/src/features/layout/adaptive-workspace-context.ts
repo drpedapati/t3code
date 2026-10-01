@@ -15,7 +15,10 @@ import {
 /** The workspace's actions; their identities never change. */
 export interface AdaptiveWorkspaceActions {
   readonly startNewTask: () => void;
-  readonly selectAdjacentThread: (currentThreadKey: string, direction: ThreadNavigationDirection) => void;
+  readonly selectAdjacentThread: (
+    currentThreadKey: string,
+    direction: ThreadNavigationDirection,
+  ) => void;
   /** Use `useSelectWorkspaceDetail`, which also works outside the layout. */
   readonly selectDetail?: (detail: WorkspaceDetail, sheet?: WorkspaceDetailSheet) => void;
   readonly registerWorkspaceInspector: (

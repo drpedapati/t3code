@@ -1,3 +1,4 @@
+import { useIsFocused } from "@react-navigation/native";
 import { useContentTopInset } from "../../components/ui/useBarInset";
 import { usePaneRole } from "../../components/ui/Pane";
 import { ScreenContent } from "../../components/ui/ScreenContent";
@@ -448,7 +449,8 @@ export function HomeScreen(props: HomeScreenProps) {
     onSelectThread(thread);
   };
   useThreadJumpShortcuts(threadListV2Items, selectThread);
-  useRegisterThreadNavigationItems(threadListV2Items);
+  const homeIsFocused = useIsFocused();
+  useRegisterThreadNavigationItems(threadListV2Items, homeIsFocused);
   // oxlint-disable-next-line t3code/no-unreasoned-state-sync -- reads the list's visible range after commit to enable swipe gestures on those rows
   useEffect(() => {
     if (swipeEnabled) activateVisibleRows(threadListV2Items);
