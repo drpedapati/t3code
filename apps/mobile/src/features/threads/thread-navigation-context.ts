@@ -9,6 +9,6 @@ export const ThreadNavigationRegistrationContext = createContext<
 /** Keep the last rendered sequence while the compact list is behind the thread route. */
 export function useRegisterThreadNavigationItems(items: ReadonlyArray<ThreadNavigationListItem>) {
   const register = use(ThreadNavigationRegistrationContext);
-  // Passive effects survive a frozen screen hiding its layout effects.
+  // oxlint-disable-next-line t3code/react-effect-budget -- Registers the committed list with the navigation owner; passive cleanup survives native screen freezing.
   useEffect(() => register(items), [items, register]);
 }

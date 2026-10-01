@@ -24,7 +24,10 @@ interface AdaptiveWorkspaceContextValue {
   readonly deferThreadSelectionUntil: (operation: Promise<unknown>) => void;
   /** Use `useSelectWorkspaceDetail`, which also works outside the layout. */
   readonly selectDetail?: (detail: WorkspaceDetail, sheet?: WorkspaceDetailSheet) => void;
-  readonly selectAdjacentThread: (currentThreadKey: string, direction: ThreadNavigationDirection) => void;
+  readonly selectAdjacentThread: (
+    currentThreadKey: string,
+    direction: ThreadNavigationDirection,
+  ) => void;
   readonly activateAuxiliaryPaneRole: (role: WorkspaceAuxiliaryPaneRole) => () => void;
   readonly registerWorkspaceInspector: (render: () => ReactNode) => () => void;
   readonly setPrimarySidebarSearchQuery: (query: string) => void;

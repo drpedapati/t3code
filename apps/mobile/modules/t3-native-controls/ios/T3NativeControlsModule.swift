@@ -46,6 +46,9 @@ public final class T3NativeControlsModule: Module {
       ViewName("LayoutMetrics")
       Events("onMetricsChange")
     }
+    View(T3PanPriorityView.self) {
+      ViewName("PanPriority")
+    }
 
     View(T3ScrollEdgeBleedView.self) {
       ViewName("ScrollEdgeBleed")
