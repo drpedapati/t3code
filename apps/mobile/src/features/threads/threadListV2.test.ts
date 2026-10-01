@@ -27,6 +27,8 @@ import { describe, expect, it, vi } from "vite-plus/test";
 import type { PendingNewTask } from "../../state/use-pending-new-tasks";
 import { makeRawThreadShell, makeThreadShellFixture } from "../../test-fixtures";
 import { threadJumpTarget } from "../keyboard/threadKeyboardShortcuts";
+import { scopedThreadKey } from "../../lib/scopedEntities";
+import { adjacentThreadTarget } from "./thread-navigation";
 import {
   buildThreadListV2Items,
   buildThreadListV2ListItems,
@@ -1134,6 +1136,68 @@ describe("buildThreadListV2ListItems", () => {
     expect(threadJumpTarget(items, "thread.jump.1")?.id).toBe("active");
     expect(threadJumpTarget(items, "thread.jump.2")?.id).toBe("settled");
     expect(threadJumpTarget(items, "thread.jump.3")).toBeNull();
+    const activeKey = scopedThreadKey(environmentId, ThreadId.make("active"));
+    const settledKey = scopedThreadKey(environmentId, ThreadId.make("settled"));
+    expect(adjacentThreadTarget(items, activeKey, "next")?.id).toBe("settled");
+    expect(adjacentThreadTarget(items, settledKey, "previous")?.id).toBe("active");
+    expect(adjacentThreadTarget(items, activeKey, "previous")).toBeNull();
+    expect(
+      adjacentThreadTarget([...items, { type: "v2-show-more" }], settledKey, "next"),
+    ).toBeNull();
+  });
+});
+
+describe("adjacentThreadTarget", () => {
+  it("follows the filtered rendered order and distinguishes equal IDs in different environments", () => {
+    const otherEnvironmentId = EnvironmentId.make("environment-2");
+    const first = makeThread({
+      id: ThreadId.make("same-id"),
+      title: "match first",
+      createdAt: "2026-06-02T02:00:00.000Z",
+    });
+    const second = makeThread({
+      id: first.id,
+      environmentId: otherEnvironmentId,
+      title: "match second",
+      createdAt: "2026-06-02T01:00:00.000Z",
+    });
+    const hidden = makeThread({ id: ThreadId.make("hidden"), title: "filtered out" });
+    const layout = buildThreadListV2Items({
+      threads: [second, hidden, first],
+      environmentId: null,
+      searchQuery: "match",
+      now: NOW,
+    });
+    const items = buildThreadListV2ListItems({ items: layout.items, pendingTasks: [] });
+    expect(items.flatMap((item) => (item.type === "v2-thread" ? [item.item.thread] : []))).toEqual([
+      first,
+      second,
+    ]);
+    expect(adjacentThreadTarget(items, scopedThreadKey(environmentId, first.id), "next")).toBe(
+      second,
+    );
+    expect(
+      adjacentThreadTarget(items, scopedThreadKey(otherEnvironmentId, second.id), "previous"),
+    ).toBe(first);
+    expect(
+      adjacentThreadTarget(items, scopedThreadKey(environmentId, hidden.id), "next"),
+    ).toBeNull();
+    expect(
+      adjacentThreadTarget(items, scopedThreadKey(environmentId, hidden.id), "previous"),
+    ).toBeNull();
+  });
+
+  it("has no neighbor for an empty list or the sole thread", () => {
+    const thread = makeThread({ id: ThreadId.make("only"), title: "Only" });
+    const items = buildThreadListV2ListItems({
+      items: [{ thread, variant: "card", snoozed: false, pinned: false, isLast: true }],
+      pendingTasks: [],
+    });
+    const key = scopedThreadKey(environmentId, thread.id);
+    for (const direction of ["previous", "next"] as const) {
+      expect(adjacentThreadTarget([], key, direction)).toBeNull();
+      expect(adjacentThreadTarget(items, key, direction)).toBeNull();
+    }
   });
 });
 
