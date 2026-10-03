@@ -34,6 +34,7 @@ import { scopedProjectKey } from "../../lib/scopedEntities";
 import { NATIVE_LIQUID_GLASS_SUPPORTED } from "../../native/native-glass";
 import { useThreadSearch } from "../../state/queries";
 import { useThreadJumpShortcuts } from "../keyboard/threadKeyboardShortcuts";
+import { useRegisterThreadNavigationItems } from "../threads/thread-navigation-context";
 import { usePendingThreadOrder } from "../../state/thread-order";
 import { threadListEnvironmentsAtom } from "../../state/server";
 import type { PendingNewTask } from "../../state/use-pending-new-tasks";
@@ -632,6 +633,7 @@ export function HomeScreen(props: HomeScreenProps) {
   );
 
   useThreadJumpShortcuts(threadListV2Items, props.onSelectThread);
+  useRegisterThreadNavigationItems(threadListV2Items);
   useEffect(() => {
     if (swipeEnabled) activateVisibleRows(threadListV2Items);
   }, [activateVisibleRows, swipeEnabled, threadListV2Items]);

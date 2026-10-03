@@ -687,7 +687,11 @@ const RootStackConfig = createNativeStackNavigator({
     Thread: createNativeStackScreen({
       screen: ThreadRouteScreen,
       linking: THREAD_LINKING_PREFIX,
-      options: GLASS_HEADER_OPTIONS,
+      options: {
+        ...GLASS_HEADER_OPTIONS,
+        // iOS 26 defaults to full-screen Back, which steals composer swipes.
+        gestureResponseDistance: { end: 32 },
+      },
     }),
     ThreadTerminal: createNativeStackScreen({
       screen: ThreadTerminalRouteScreen,
