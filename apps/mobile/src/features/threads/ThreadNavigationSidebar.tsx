@@ -38,6 +38,7 @@ import { useWorkspaceState } from "../../state/workspace";
 import { useSavedRemoteConnections } from "../../state/use-remote-environment-registry";
 import { useHardwareKeyboardCommand } from "../keyboard/hardwareKeyboardCommands";
 import { useThreadJumpShortcuts } from "../keyboard/threadKeyboardShortcuts";
+import { useRegisterThreadNavigationItems } from "./thread-navigation-context";
 import { useHomeListOptions } from "../home/home-list-options";
 import { buildHomeListFilterMenu } from "../home/home-list-filter-menu";
 import { buildHomeProjectScopes } from "../home/homeThreadList";
@@ -621,6 +622,7 @@ function ThreadNavigationSidebarPane(
     ],
   );
   useThreadJumpShortcuts(listItems, handleSelectThread);
+  useRegisterThreadNavigationItems(listItems);
   const sidebarItemsAreEqual = useCallback(
     (previous: SidebarListItem, item: SidebarListItem): boolean => {
       if (isThreadListV2ListItem(previous) && isThreadListV2ListItem(item)) {
