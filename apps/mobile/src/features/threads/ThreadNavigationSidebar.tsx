@@ -1,5 +1,6 @@
 import { useActiveNewTask } from "../../state/active-new-task";
 import { ThreadUndoNotice } from "../home/ThreadUndoNotice";
+import { useRegisterThreadNavigationItems } from "./thread-navigation-context";
 import { useAndroidControlSizing } from "../../components/ui/useAndroidControlSizing";
 import { resolveScratchProjectScopeKey } from "@t3tools/client-runtime/state/project-grouping";
 import { useAppearancePreferences } from "../settings/appearance/AppearancePreferencesProvider";
@@ -487,6 +488,7 @@ function ThreadNavigationSidebarPane(
     workingShelfEnabled,
   };
   useThreadJumpShortcuts(listItems, handleSelectThread);
+  useRegisterThreadNavigationItems(listItems);
   const sidebarItemsAreEqual = (previous: SidebarListItem, item: SidebarListItem): boolean => {
     if (isThreadListV2ListItem(previous) && isThreadListV2ListItem(item)) {
       return threadListV2ListItemsAreEqual(previous, item);
